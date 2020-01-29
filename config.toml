@@ -1,0 +1,24 @@
+baseURL = "https://sixfoisneuf.fr"
+languageCode = "en-us"
+title = "SixFoisNeuf"
+theme = "ezhil"
+
+# Enable syntax highlighting.
+pygmentsstyle = "solarized-light"
+pygmentscodefences = true
+pygmentscodefencesguesssyntax = true
+
+[[menu.main]]
+name = "Home"
+url = "/"
+weight = 1
+
+[[menu.main]]
+name = "About me"
+url = "/about"
+weight = 2
+
+[[menu.main]]
+name = "RSS"
+url = "/posts/index.xml"
+weight = 3
