@@ -8,6 +8,20 @@ pygmentsstyle = "solarized-light"
 pygmentscodefences = true
 pygmentscodefencesguesssyntax = true
 
+[params]
+subtitle = "Systems administration, DFIR and malware analysis"
+featherIconsCDN = true
+
+[[params.social]]
+name = "Twitter"
+icon = "twitter"
+url = "https://twitter.com/simsor"
+
+[[params.social]]
+name = "GitHub"
+icon = "github"
+url = "https://github.com/simsor"
+
 [[menu.main]]
 name = "Home"
 url = "/"
