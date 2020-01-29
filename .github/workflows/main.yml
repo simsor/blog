@@ -14,7 +14,7 @@ jobs:
       - name: hugo-deploy-gh-pages
         uses: khanhicetea/gh-actions-hugo-deploy-gh-pages@master
         env:
-          GITHUB_REMOTE_REPOSITORY: sgarrelou/blog
+          GITHUB_REMOTE_REPOSITORY: simsor/blog
           GITHUB_BRANCH: deploy
           GIT_DEPLOY_KEY: ${{ secrets.GIT_DEPLOY_KEY }}
           HUGO_VERSION: "0.63.2"
