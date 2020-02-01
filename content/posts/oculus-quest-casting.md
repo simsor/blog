@@ -40,3 +40,5 @@ $ ./scrcpy -c 1200:1000:130:250 -m 1024 -b 8M
 ```
 
 ## Quality control
+
+You can pass various options to `scrcpy` to change the video quality depending on the speed of your WiFi connection:
