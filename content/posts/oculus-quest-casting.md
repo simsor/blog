@@ -28,7 +28,7 @@ $ adb list # Repeat until you see your Quest
 $ ./scrcpy -c 1200:1000:130:250 -m 1024 -b 8M
 ```
 
-With recent ADB versions, you can even use ADB over WiFi! I higly recommend connecting both your PC and Quest to a 5GHz WiFi network though, the difference is incredible.
+With recent ADB versions, you can even use ADB over WiFi! I higly recommend connecting both your PC and Quest to a 5GHz WiFi network though, the difference is incredible!
 
 ```
 $ adb shell ip route
