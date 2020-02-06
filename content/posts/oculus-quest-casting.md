@@ -34,7 +34,16 @@ With recent ADB versions, you can even use ADB over WiFi!
 $ adb shell ip route
 # Take note of your device ip
 $ adb tcpip 5555
-$ adb connect IP_ADDRESS
 
+# Unplug your Quest before the next command
+$ adb connect IP_ADDRESS
 $ ./scrcpy -c 1200:1000:130:250 -m 1024 -b 8M
 ```
+
+Plug your PC to your living room TV and voilà! You can even tweak the quality and resolution by tinkering with the parameters, just read the documentation 😀 
+
+# Conclusion
+
+I wrote this article in part to share a cool and useful trick, but also to test my blog's new automated deployment system! This static website is automatically rebuilt every time I push on my GitHub repository (using the new-ish GitHub Actions) and a Web Hook asks this server to fetch the new version.
+
+This will be the subject of another blog post, where I will also release the small tool I developed in order to easily react to web hooks.
