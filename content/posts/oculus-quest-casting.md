@@ -1,7 +1,7 @@
 ---
 title: "Oculus Quest wireless casting"
 date: 2020-01-29T18:48:00+001
-draft: true
+draft: false
 ---
 
 I recently caved in and acquired an [Oculus Quest](https://www.oculus.com/quest/). Even if Oculus is now part of the Facebook conglomerate (ugh), this piece of hardware is really impressive, and relatively affordable: you essentially get all the hardware you need to get access to the VR ecosystem for about ~€450. No need for a beefy PC or anything of the sort!
