@@ -3,10 +3,15 @@ languageCode = "en-us"
 title = "SixFoisNeuf"
 theme = "ezhil"
 
-# Enable syntax highlighting.
-pygmentsstyle = "solarized-light"
-pygmentscodefences = true
-pygmentscodefencesguesssyntax = true
+[markup]
+  [markup.highlight]
+    codeFences = true
+    guessSyntax = false
+    lineNos = false
+    lineNumbersInTable = false
+    noClasses = true
+    style = "vs"
+    tabWidth = 4
 
 [params]
 subtitle = "Systems administration, DFIR and malware analysis"
