@@ -1,6 +1,6 @@
 ---
 title: "Oculus Quest wireless casting"
-date: 2020-01-29T18:48:00+001
+date: 2020-01-29 18:48:00
 draft: false
 ---
 
