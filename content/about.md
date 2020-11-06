@@ -5,7 +5,7 @@ date: 2020-01-02
 
 ## Hey there :-)
 
-I'm Simon, a 23 y-o from France. I enjoy poking at malware, writing cool programs and scripts, Oxford commas, and anything related to digital forensics! I'm currently lucky enough to be doing all of that at my job :)
+I'm Simon, a 24 y-o from France. I enjoy poking at malware, writing cool programs and scripts, Oxford commas, and anything related to digital forensics! I'm currently lucky enough to be doing all of that at my job :)
 
 You can chat with me on [Twitter](https://twitter.com/simsor) or check
 out some of my projects on [GitHub](https://github.com/simsor). You
