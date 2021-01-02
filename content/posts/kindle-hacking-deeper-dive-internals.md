@@ -332,6 +332,6 @@ Running `strace lipc-get-prop com.lab126.wifid 711` shows some interesting stuff
 
 ## Conclusion
 
-Wow, this took longer than expected! I wanted to talk about my [Doom port]() but I feel like it would make for too big of a post! This will have to wait for the next one 😛
+Wow, this took longer than expected! I wanted to talk about my [Doom port](https://twitter.com/simsor/status/1344702881065263105) but I feel like it would make for too big of a post! This will have to wait for the next one 😛
 
 Digging into the Kindle internals was really interesting, and also a great source of learning: I didn't know much about framebuffers or ioctls before jumping in. The next step will be to contribute back to the MobileRead wiki with everything I've found! Thanks a bunch to these people!!
