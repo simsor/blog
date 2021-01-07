@@ -1,0 +1,50 @@
+<!doctype html><html><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge"><title>AlexCTF Writeup - SixFoisNeuf</title><meta name=viewport content="width=device-width,initial-scale=1"><meta property="og:title" content="AlexCTF Writeup"><meta property="og:description" content="The only challenge I solved during this CTF was the &ldquo;unVM_me&rdquo; reverse engineering challenge (finally! Something other than crypto!)
+We were given a pyc (Python Bytecode) file containing the flag. Executing it asked for the flag, and told us if it was right or wrong.
+Decompiling the bytecode I used PyCDC to decompile the pyc file. This gave me the following source code (I modified it to add some error checking to help with debugging):"><meta property="og:type" content="article"><meta property="og:url" content="https://sixfoisneuf.fr/posts/alexctf-writeup/"><meta property="article:published_time" content="2017-02-08T17:01:11+01:00"><meta property="article:modified_time" content="2017-02-08T17:01:11+01:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="AlexCTF Writeup"><meta name=twitter:description content="The only challenge I solved during this CTF was the &ldquo;unVM_me&rdquo; reverse engineering challenge (finally! Something other than crypto!)
+We were given a pyc (Python Bytecode) file containing the flag. Executing it asked for the flag, and told us if it was right or wrong.
+Decompiling the bytecode I used PyCDC to decompile the pyc file. This gave me the following source code (I modified it to add some error checking to help with debugging):"><link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel=stylesheet><link rel=stylesheet type=text/css media=screen href=https://sixfoisneuf.fr/css/normalize.css><link rel=stylesheet type=text/css media=screen href=https://sixfoisneuf.fr/css/main.css><script src=https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js></script><script src=https://sixfoisneuf.fr/js/main.js></script></head><body><div class="container wrapper post"><div class=header><base href=https://sixfoisneuf.fr/><h1 class=site-title><a href=https://sixfoisneuf.fr/>SixFoisNeuf</a></h1><div class=site-description><h2>Systems administration, DFIR and malware analysis</h2><nav class="nav social"><ul class=flat><a href=https://twitter.com/simsor title=Twitter><i data-feather=twitter></i></a><a href=https://github.com/simsor title=GitHub><i data-feather=github></i></a></ul></nav></div><nav class=nav><ul class=flat><li><a href=/>Home</a></li><li><a href=/about>About me</a></li><li><a href=/posts/index.xml>RSS</a></li></ul></nav></div><div class=post-header><h1 class=title>AlexCTF Writeup</h1><div class=meta>Posted at &mdash; Feb 8, 2017</div></div><div class=markdown><p>The only challenge I solved during this CTF was the &ldquo;unVM_me&rdquo; reverse
+engineering challenge (finally! Something other than crypto!)</p><p>We were given a pyc (Python Bytecode) file containing the
+flag. Executing it asked for the flag, and told us if it was right or
+wrong.</p><h2 id=decompiling-the-bytecode>Decompiling the bytecode</h2><p>I used <a href=https://github.com/zrax/pycdc>PyCDC</a> to decompile the pyc
+file. This gave me the following source code (I modified it to add
+some error checking to help with debugging):</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-python data-lang=python><span style=color:#00f>import</span> md5
+md5s = [
+    0x831DAA3C843BA8B087C895F0ED305CE7L,
+    0x6722F7A07246C6AF20662B855846C2C8L,
+    0x5F04850FEC81A27AB5FC98BEFA4EB40CL,
+    0xECF8DCAC7503E63A6A3667C5FB94F610L,
+    0xC0FD15AE2C3931BC1E140523AE934722L,
+    0x569F606FD6DA5D612F10CFB95C0BDE6DL,
+    0x68CB5A1CF54C078BF0E7E89584C1A4EL,
+    0xC11E2CD82D1F9FBD7E4D6EE9581FF3BDL,
+    0x1DF4C637D625313720F45706A48FF20FL,
+    0x3122EF3A001AAECDB8DD9D843C029E06L,
+    0xADB778A0F729293E7E0B19B96A4C5A61L,
+    0x938C747C6A051B3E163EB802A325148EL,
+    0x38543C5E820DD9403B57BEFF6020596DL]
+<span style=color:#00f>print</span> <span style=color:#a31515></span><span style=color:#a31515>&#39;</span><span style=color:#a31515>Can you turn me back to python ? ...</span><span style=color:#a31515>&#39;</span>
+flag = raw_input(<span style=color:#a31515></span><span style=color:#a31515>&#39;</span><span style=color:#a31515>well as you wish.. what is the flag: </span><span style=color:#a31515>&#39;</span>)
+<span style=color:#00f>if</span> len(flag) &gt; 69:
+    <span style=color:#00f>print</span> <span style=color:#a31515></span><span style=color:#a31515>&#39;</span><span style=color:#a31515>nice try</span><span style=color:#a31515>&#39;</span>
+    exit()
+<span style=color:#00f>if</span> len(flag) % 5 != 0:
+    <span style=color:#00f>print</span> <span style=color:#a31515></span><span style=color:#a31515>&#39;</span><span style=color:#a31515>nice try</span><span style=color:#a31515>&#39;</span>
+    exit()
+<span style=color:#00f>for</span> i <span style=color:#00f>in</span> range(0, len(flag), 5):
+    s = flag[i:i + 5]
+    <span style=color:#00f>if</span> int(<span style=color:#a31515></span><span style=color:#a31515>&#39;</span><span style=color:#a31515>0x</span><span style=color:#a31515>&#39;</span> + md5.new(s).hexdigest(), 16) != md5s[i / 5]:
+        <span style=color:#00f>print</span> <span style=color:#a31515></span><span style=color:#a31515>&#34;</span><span style=color:#a31515>Error : </span><span style=color:#a31515>%s</span><span style=color:#a31515>&#34;</span> % (s)
+        <span style=color:#00f>print</span> <span style=color:#a31515></span><span style=color:#a31515>&#34;</span><span style=color:#a31515>You entered : </span><span style=color:#a31515>%s</span><span style=color:#a31515> </span><span style=color:#a31515>&#34;</span>% (<span style=color:#a31515></span><span style=color:#a31515>&#39;</span><span style=color:#a31515>0x</span><span style=color:#a31515>&#39;</span> + md5.new(s).hexdigest())
+        <span style=color:#00f>print</span> <span style=color:#a31515></span><span style=color:#a31515>&#34;</span><span style=color:#a31515>Expected : </span><span style=color:#a31515>%s</span><span style=color:#a31515> </span><span style=color:#a31515>&#34;</span> % (hex(md5s[i/5]))
+        <span style=color:#00f>print</span> <span style=color:#a31515></span><span style=color:#a31515>&#39;</span><span style=color:#a31515>nice try</span><span style=color:#a31515>&#39;</span>
+        exit()
+        <span style=color:#00f>continue</span>
+<span style=color:#00f>print</span> <span style=color:#a31515></span><span style=color:#a31515>&#39;</span><span style=color:#a31515>Congratz now you have the flag</span><span style=color:#a31515>&#39;</span>
+</code></pre></div><h2 id=getting-the-flag>Getting the flag</h2><p>We can see a list of 13 MD5 hashes. The codes seems to check the MD5
+hash of each group of 5 characters from the user string against the
+corresponding hash in the list. This means we need to crack every hash
+and that each should give us a 5-character string.</p><p>I used <a href=https://hashkiller.co.uk/md5-decrypter.aspx>HashKiller</a> to
+crack the hashes (I guess you could also try bruteforcing them, which
+shouldn&rsquo;t be too long knowing the first characters were necessarily
+<code>ALEXCTF{</code>)</p><p>This gave us the following flag: <code>ALEXCTF{dv5d4s2vj8nk43s8d8l6m1n5l67ds9v41n52nv37j481h3d28n4b6v3k}</code></p><p>Inputting it back into the program proved it was indeed the correct
+flag!</p></div><div class=post-tags></div></div><div class="footer wrapper"><nav class=nav><div><a href=https://github.com/vividvilla/ezhil>Ezhil theme</a> | Built with <a href=https://gohugo.io>Hugo</a></div></nav></div><script>feather.replace()</script></body></html>

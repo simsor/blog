@@ -1,0 +1,193 @@
+<!doctype html><html><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge"><title>Kindle hacking: a deeper dive into the internals - SixFoisNeuf</title><meta name=viewport content="width=device-width,initial-scale=1"><meta property="og:title" content="Kindle hacking: a deeper dive into the internals"><meta property="og:description" content="In this blog post, we will research in more details how the system interacts with all the different hardware components of this e-book reader. In the previous blog post, we stayed within Amazon&rsquo;s &ldquo;walled garden&rdquo; (kind of): our apps had to use the Kindle Developement Kit, and with it all kinds of restrictions:
+ No socket connection. All network connections must be HTTP/S. Cannot react to key presses however we want: for example, pressing Menu always brings up a menu."><meta property="og:type" content="article"><meta property="og:url" content="https://sixfoisneuf.fr/posts/kindle-hacking-deeper-dive-internals/"><meta property="article:published_time" content="2021-01-01T22:12:00+00:00"><meta property="article:modified_time" content="2021-01-01T22:12:00+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="Kindle hacking: a deeper dive into the internals"><meta name=twitter:description content="In this blog post, we will research in more details how the system interacts with all the different hardware components of this e-book reader. In the previous blog post, we stayed within Amazon&rsquo;s &ldquo;walled garden&rdquo; (kind of): our apps had to use the Kindle Developement Kit, and with it all kinds of restrictions:
+ No socket connection. All network connections must be HTTP/S. Cannot react to key presses however we want: for example, pressing Menu always brings up a menu."><link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel=stylesheet><link rel=stylesheet type=text/css media=screen href=https://sixfoisneuf.fr/css/normalize.css><link rel=stylesheet type=text/css media=screen href=https://sixfoisneuf.fr/css/main.css><script src=https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js></script><script src=https://sixfoisneuf.fr/js/main.js></script></head><body><div class="container wrapper post"><div class=header><base href=https://sixfoisneuf.fr/><h1 class=site-title><a href=https://sixfoisneuf.fr/>SixFoisNeuf</a></h1><div class=site-description><h2>Systems administration, DFIR and malware analysis</h2><nav class="nav social"><ul class=flat><a href=https://twitter.com/simsor title=Twitter><i data-feather=twitter></i></a><a href=https://github.com/simsor title=GitHub><i data-feather=github></i></a></ul></nav></div><nav class=nav><ul class=flat><li><a href=/>Home</a></li><li><a href=/about>About me</a></li><li><a href=/posts/index.xml>RSS</a></li></ul></nav></div><div class=post-header><h1 class=title>Kindle hacking: a deeper dive into the internals</h1><div class=meta>Posted at &mdash; Jan 1, 2021</div></div><div class=markdown><p>In this blog post, we will research in more details how the system interacts with all the different hardware components of this e-book reader. In the <a href=https://sixfoisneuf.fr/posts/kindle-hacking-jailbreak/>previous blog post</a>, we stayed within Amazon&rsquo;s &ldquo;walled garden&rdquo; (kind of): our apps had to use the Kindle Developement Kit, and with it all kinds of restrictions:</p><ul><li>No socket connection. All network connections <strong>must</strong> be HTTP/S.</li><li>Cannot react to key presses however we want: for example, pressing Menu always brings up a menu.</li><li>Cannot hide the status bar to create full-screen apps.</li></ul><p>In addition, these apps have to be written with their old-ass Java subset and execute on their proprietary JVM. Surely we can do better!</p><h2 id=executing-native-code>Executing native code</h2><p>According to <a href=https://en.wikipedia.org/wiki/Amazon_Kindle>Wikipedia</a>, the Kindle 4 has a <code>Freescale i.MX508 800 MHz</code> processor. Running <code>uname</code> on the system confirms the exact architecture it is using:</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ uname -a
+Linux kindle 2.6.31-rt11-lab126 <span style=color:green>#5 Sat Jan 12 20:39:09 PST 2013 armv7l unknown</span>
+</code></pre></div><p>Could it be as easy as compiling our code for an ARMv7 Linux target? Turns out, yes it is!</p><p>Let&rsquo;s try it out with a simple Go program:</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-golang data-lang=golang><span style=color:#00f>package</span> main
+
+<span style=color:#00f>import</span> <span style=color:#a31515>&#34;fmt&#34;</span>
+
+<span style=color:#00f>func</span> main() {
+    fmt.Println(<span style=color:#a31515>&#34;Hello, Kindle!&#34;</span>)
+}
+</code></pre></div><p>Compiling it for a <code>linux/armv7</code> system is incredibly easy:</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ export GOOS=linux
+$ export GOARCH=arm
+$ export GOARM=7
+$ go build
+</code></pre></div><p>Let&rsquo;s try to run it on our Kindle!</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ ./kindle-test
+Hello, Kindle!
+</code></pre></div><p>It works!! But we are still limited to basic input-output from a SSH&rsquo;d computer, which is not what we want! We now need a way to display stuff on the screen.</p><h2 id=poking-around-the-system>Poking around the system</h2><p>If you poke around the filesystem a little (or if you look on the <a href=https://wiki.mobileread.com/wiki/Main_Page>MobileRead Wiki</a>), you will certainly find some interesting utilities:</p><ul><li><a href=https://wiki.mobileread.com/wiki/Eips><code>/usr/sbin/eips</code></a>: write text or images to the screen, refresh it, clear it</li><li><code>/usr/bin/waitforkey</code>: waits for a key to be pressed or released on the Kindle and returns it, as well as its state.</li><li><a href=https://wiki.mobileread.com/wiki/Lipc><code>/usr/bin/lipc-*</code></a>: all kinds of utilities to use LIPC, an inter-process communication system specific to the Kindle series</li></ul><p>Already, we get a way to draw arbitrary stuff to the screen and listen to key presses. That&rsquo;s promising! By shelling out to these programs in our apps, we can free ourselves from the constraints imposed by the Kindlet framework :)</p><p>The first version of <a href=https://github.com/simsor/go-kindle><code>go-kindle</code></a> was only a simple wrapper around these three programs, and it was enough to develop some pretty nifty stuff! But shelling out isn&rsquo;t fun, so let&rsquo;s try to understand how they work!</p><h2 id=the-e-ink-framebuffer>The e-ink framebuffer</h2><p>In order to get a feel of what <code>eips</code> does, let&rsquo;s run it through <code>strace</code> to determine what it does when clearing the screen:</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ strace eips -c
+...
+open(<span style=color:#a31515>&#34;/dev/fb0&#34;</span>, O_RDWR)                = 3
+ioctl(3, FBIOGET_VSCREENINFO, 0xbef7eae8) = 0
+mmap2(NULL, 480000, PROT_READ|PROT_WRITE, MAP_SHARED|MAP_LOCKED, 3, 0) = 0x40127000
+ioctl(3, FBIO_EINK_CLEAR_SCREEN, 0)     = 0
+close(3)                                = 0
+exit_group(0)                           = ?
++++ exited with 0 +++
+</code></pre></div><p><code>/dev/fb0</code>?! That&rsquo;s really interesting! This makes us think that the e-ink display is exposed through a semi-standard Linux Framebuffer device. &ldquo;Semi-standard&rdquo;, because it uses both well-known ioctl codes such as <a href=https://elixir.bootlin.com/linux/latest/ident/FBIOGET_VSCREENINFO><code>FBIOGET_VSCREENINFO</code></a> and seemingly unknown ones, like <code>FBIO_EINK_CLEAR_SCREEN</code>. <em>(Side note: does anyone know where <code>strace</code> is pulling these identifiers from?)</em></p><p>Also, the <code>mmap</code>'d section is exactly 480000 bytes long, which is the result of <code>600 * 800</code>, the resolution of the display! Each byte must represent a pixel on the screen, with 255 possible color values.</p><p>Let&rsquo;s run strace again, but this time let&rsquo;s tell it not to pretty-print the identifiers: we want their real value!</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ strace -e ioctl -e raw=ioctl eips -c
+ioctl(0x3, 0x4600, 0xbed19ae8)          = 0
+ioctl(0x3, 0x46e1, 0)                   = 0
++++ exited with 0 +++
+</code></pre></div><p>The first ioctl is <code>FBIOGET_VSCREENINFO</code>, but the second one is the one we were searching for: <code>FBIO_EINK_CLEAR_SCREEN</code>!</p><p>By using the same technique with the various <a href=https://wiki.mobileread.com/wiki/Eips><code>eips</code> command switches</a>, we can find the following:</p><ul><li><code>FBIO_EINK_CLEAR_SCREEN</code> = <code>0x46e1</code></li><li><code>FBIO_EINK_UPDATE_DISPLAY</code> = <code>0x46db</code><ul><li>When passing the parameter <code>0</code> to this ioctl, the screen refreshes without blinking, but leaves &ldquo;ghost&rdquo; traces</li><li>When passing the parameter <code>1</code>, the screen does the well-known e-ink flash and cleanly redisplays its contents</li></ul></li></ul><p>We have now found a way to access the screen contents, change them, clear the screen and refresh it. That&rsquo;s perfect! This was the time when I updated <code>go-kindle</code> to directly access the framebuffer to display images! It still shells out to <code>eips</code> to display text because I still haven&rsquo;t gotten around to implementing that yet.</p><h2 id=reading-key-presses>Reading key presses</h2><p>Let&rsquo;s use the same technique to have a look at <code>waitforkey</code>.</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ strace -e open,read waitforkey
+open(<span style=color:#a31515>&#34;/dev/input/event0&#34;</span>, O_RDONLY)     = 3
+open(<span style=color:#a31515>&#34;/dev/input/event1&#34;</span>, O_RDONLY)     = 4
+open(<span style=color:#a31515>&#34;/dev/input/event2&#34;</span>, O_RDONLY)     = 5
+open(<span style=color:#a31515>&#34;/dev/input/event3&#34;</span>, O_RDONLY)     = -1 ENOENT (No such file or directory)
+
+<span style=color:green># Here, I press &#34;Down&#34;</span>
+
+read(4, <span style=color:#a31515>&#34;\376\233\357_\354Y\16\0\1\0l\0\1\0\0\0&#34;</span>, 16) = 16
+108 1
++++ exited with 0 +++
+</code></pre></div><p>The following happened:</p><ul><li><code>waitforkey</code> opened three different input devices: <code>event0</code>, <code>event1</code> and <code>event2</code></li><li><code>event1</code> produced something when I pressed the &ldquo;Down&rdquo; key</li></ul><p>Here is the data that was read in hexdump form:</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ printf <span style=color:#a31515>&#34;\376\233\357_\354Y\16\0\1\0l\0\1\0\0\0&#34;</span> | hexdump -C
+00000000  fe 9b ef 5f ec 59 0e 00  01 00 6c 00 01 00 00 00  |..._.Y....l.....|
+00000010
+</code></pre></div><p>The last four bytes look like a 4-byte integer reading <code>1</code>, which is the state that was returned. The four bytes before that read <code>01 00 6c 00</code>, which doesn&rsquo;t look like much&mldr;except if we remember we&rsquo;re also looking for <code>108</code>, or <code>0x6c</code>! The key code might then be only coded on two bytes.</p><p>I&rsquo;m not sure what the other bytes mean yet, but we can create a struct to hold this information and read <code>/dev/input/event1</code> ourselves!</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c data-lang=c><span style=color:#00f>typedef</span> <span style=color:#00f>struct</span> {
+    <span style=color:#2b91af>unsigned</span> <span style=color:#2b91af>int</span> stuff1;
+    <span style=color:#2b91af>unsigned</span> <span style=color:#2b91af>int</span> stuff2;
+    <span style=color:#2b91af>unsigned</span> <span style=color:#2b91af>short</span> stuff3;
+    <span style=color:#2b91af>unsigned</span> <span style=color:#2b91af>short</span> keyCode;
+    <span style=color:#2b91af>unsigned</span> <span style=color:#2b91af>int</span> state;
+} kindle_event_1_t
+</code></pre></div><p>This allows us to react to the direction keys, as well as the &ldquo;OK&rdquo; key. Let&rsquo;s try to see what the other keys look like:</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ strace -e open,read waitforkey
+open(<span style=color:#a31515>&#34;/dev/input/event0&#34;</span>, O_RDONLY)     = 3
+open(<span style=color:#a31515>&#34;/dev/input/event1&#34;</span>, O_RDONLY)     = 4
+open(<span style=color:#a31515>&#34;/dev/input/event2&#34;</span>, O_RDONLY)     = 5
+open(<span style=color:#a31515>&#34;/dev/input/event3&#34;</span>, O_RDONLY)     = -1 ENOENT (No such file or directory)
+
+<span style=color:green># Press &#34;Home&#34;</span>
+
+read(3, <span style=color:#a31515>&#34;#\236\360_P\225\4\0\4\0\4\0\6\0\0\0&#34;</span>, 16) = 16
+read(3, <span style=color:#a31515>&#34;#\236\360_\335\225\4\0\1\0f\0\1\0\0\0&#34;</span>, 16) = 16
+102 1
++++ exited with 0 +++
+</code></pre></div><p>This time, <code>waitforkey</code> read <em>twice</em> from <code>event0</code>. The data is as follows:</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>$ printf <span style=color:#a31515>&#34;#\236\360_P\225\4\0\4\0\4\0\6\0\0\0&#34;</span> | hexdump -C
+00000000  23 9e f0 5f 50 95 04 00  04 00 04 00 06 00 00 00  |<span style=color:green>#.._P...........|</span>
+00000010
+$ printf <span style=color:#a31515>&#34;#\236\360_\335\225\4\0\1\0f\0\1\0\0\0&#34;</span> | hexdump -C
+00000000  23 9e f0 5f dd 95 04 00  01 00 66 00 01 00 00 00  |<span style=color:green>#.._......f.....|</span>
+00000010
+</code></pre></div><p>The &ldquo;Home&rdquo; key is <code>102</code>, or <code>0x66</code>&mldr;there is a <code>0x66</code> in the second message, but not the first one. Let&rsquo;s try another button, &ldquo;Back&rdquo; (<code>0x9E</code>):</p><pre><code>00000000  86 9f f0 5f 9c c1 0b 00  04 00 04 00 07 00 00 00  |..._............|
+00000010
+
+00000000  86 9f f0 5f 26 c2 0b 00  01 00 9e 00 01 00 00 00  |..._&amp;...........|
+00000010
+</code></pre><p>The interesting bit is at the same place! I&rsquo;m not sure what the first message is for, but we can re-use the first <code>struct</code> and add a define:</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-c data-lang=c><span style=color:#00f>#</span><span style=color:#00f>define KINDLE_KEY_BEGIN_MESSAGE 4</span><span style=color:#00f>
+</span></code></pre></div><p>This way, after reading from <code>event0</code>, if the <code>keyCode</code> is <code>KINDLE_KEY_BEGIN_MESSAGE</code>, we know we need to read again to get the real data. I updated <code>go-kindle</code> to do this automatically!</p><h2 id=the-inter-process-communication-system-lipc>The inter-process communication system: <code>LIPC</code></h2><p>While looking for ways to get the SSID of the access point the Kindle was connected to, I stumbled upon the <a href=https://wiki.mobileread.com/wiki/Lipc>MobileRead page on <code>lipc</code></a>. It looked like a proprietary inter-process communication system, and the list of endpoints was really interesting: we could get battery information, WiFi data, and a bunch of other stuff!!</p><p>Running <code>lipc-probe -a</code> gives us a list of <em>all</em> the processes connected to LIPC and what they&rsquo;re exposing:</p><pre><code>com.lab126.pmond
+	r 	Str	summary
+	w	Str	start
+	w	Str	restart
+	w	Str	stop
+	rw	Str	logMask
+	w	Str	kill
+	w	Str	heartbeat_start
+	w	Str	mem_limit
+	rw	Str	logLevel
+	w	Str	heartbeat_stop
+com.lab126.powerd
+	w 	Int	addSuspendLevels
+	r	Str	status
+	w	Int	wakeUp
+	rw	Int	preventScreenSaver
+	rw	Str	logMask
+	w	Int	suspendGrace
+	w	Int	deferSuspend
+	rw	Str	logLevel
+	w	Int	touchScreenSaverTimeout
+	r	Str	state
+	w	Int	abortSuspend
+	r	Int	isCharging
+	r	Int	battLevel
+	w	Int	rtcWakeup
+com.lab126.system
+	w 	Str	date
+	r	Str	version
+	r	Str	boardid
+	r	Str	waveformversion
+	r	Str	usid
+	r	Str	orientation
+	w	Str	sendEvent
+com.lab126.wifid
+	rw 	Has	createProfile
+	r	Str	signalStrength
+	rw	Has	cmNWProperties
+	rw	Has	netConfig
+	r	Str	manufacturerCode
+	rw	Has	profileData
+	w	Int	hotSpotDBDownloadStatus
+	r	Str	feelingLuckyProfile
+	w	Str	cmDisconnect
+	rw	Has	currentEssid
+	r	Str	711
+	r	Int	profileCount
+	w	Str	cmConnMode
+	r	Str	cmState
+	w	Str	scan
+	rw	Str	logMask
+	rw	Has	createNetConfig
+	r	Int	scanListCount
+	w	Str	cmCheckConnection
+	r	Int	cmIntfInUse
+	rw	Int	enable
+	r	Str	macAddress
+	rw	Str	logLevel
+	w	Str	deleteProfile
+	r	Str	scanState
+	w	Str	cmConnect
+	rw	Has	scanList
+	rw	Has	cmIntfInfo
+	r	Str	macSecret
+com.lab126.framework
+	rw 	Has	transfer_status
+	w	Int	clearRffItems
+	w	Int	insertKeystroke
+	r	Str	xfsn
+	rw	Str	logMask
+	w	Int	logContent
+	rw	Str	logLevel
+	r	Int	wirelessSwitch
+	w	Int	read
+	r	Int	isRegistered
+	r	Int	wanSwitch
+	w	Int	dismissDialog
+com.lab126.transfer
+	rw 	Has	dump_queues
+	rw	Has	modify
+	rw	Has	get_info
+	rw	Has	request_upload
+	rw	Has	dequeue
+	rw	Str	logMask
+	rw	Str	logLevel
+	rw	Has	send_status
+	rw	Has	request_download
+	rw	Has	obliterate
+com.lab126.phd
+	w 	Str	newSPHSchedule
+	rw	Str	logMask
+	rw	Str	logLevel
+com.lab126.volumd
+	r 	Int	mmcIsAvailable
+	r	Int	userstoreFreeSpace
+	r	Int	driveModeState
+	r	Int	mmcFreeSpace
+	rw	Int	useUsbForSerial
+	w	Int	userstoreReadyToUnMount
+	rw	Str	logMask
+	r	Int	mmcTotalSpace
+	rw	Int	useUsbForNetwork
+	r	Int	userstoreTotalSpace
+	rw	Str	logLevel
+	r	Int	userstoreIsAvailable
+com.lab126.webreaderListener
+com.lab126.cmd
+	r 	Str	activeInterface
+	w	Str	ensureConnection
+	rw	Str	logMask
+	rw	Str	logLevel
+	rw	Int	wirelessEnable
+	rw	Has	availableInterfaces
+	rw	Has	interfaceProperties
+com.lab126.cvm
+	rw 	Str	logMask
+	rw	Str	logLevel
+</code></pre><p>Wow wow wow 😍 There&rsquo;s everything we could ever want in there!! We can see three data types:</p><ul><li><code>Int</code>: integer type</li><li><code>Str</code>: string type</li><li><code>Has</code>: hash array type (a map basically)</li></ul><p><code>r</code> means we can only read from it, <code>w</code> that we can only write to it, and I&rsquo;ll let you guess what <code>rw</code> means 😉</p><p>Reading and writing to basic types (<code>int</code> and <code>str</code>) can be done with <code>lipc-get-prop</code> and <code>lipc-set-prop</code>. Hash arrays must be read with <code>lipc-hash-prop -n</code> and written to with <code>lipc-hash-prop</code>. It only says &ldquo;Accepts a Hasharray from the input stream&rdquo;, I don&rsquo;t know what format is expected.</p><p>Running <code>strace lipc-get-prop com.lab126.wifid 711</code> shows some interesting stuff, such as the process opening <code>/var/run/dbus/system_bus_socket</code>. This protocol might be written on top of dbus! I have dug any deeper on this yet, because shelling out to the various <code>lipc</code> binaries is less of a performance issue than for the other parts (I&rsquo;m not checking the battery state 20 times a second).</p><h2 id=conclusion>Conclusion</h2><p>Wow, this took longer than expected! I wanted to talk about my <a href=https://twitter.com/simsor/status/1344702881065263105>Doom port</a> but I feel like it would make for too big of a post! This will have to wait for the next one 😛</p><p>Digging into the Kindle internals was really interesting, and also a great source of learning: I didn&rsquo;t know much about framebuffers or ioctls before jumping in. The next step will be to contribute back to the MobileRead wiki with everything I&rsquo;ve found! Thanks a bunch to these people!!</p></div><div class=post-tags></div></div><div class="footer wrapper"><nav class=nav><div><a href=https://github.com/vividvilla/ezhil>Ezhil theme</a> | Built with <a href=https://gohugo.io>Hugo</a></div></nav></div><script>feather.replace()</script></body></html>

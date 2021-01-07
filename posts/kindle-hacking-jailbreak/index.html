@@ -1,0 +1,82 @@
+<!doctype html><html><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge"><title>Kindle hacking: jailbreaking your Kindle 4 and writing Kindlets - SixFoisNeuf</title><meta name=viewport content="width=device-width,initial-scale=1"><meta property="og:title" content="Kindle hacking: jailbreaking your Kindle 4 and writing Kindlets"><meta property="og:description" content="I have been back at my folks for winter holiday, which means I&rsquo;m rediscovering some old stuff I had laying around. One of these is a Kindle 4, an old ebook reader which was gathering dust in the corner of my room.
+After seeing someone use it as a weather station, I started to look up how I could go about running custom code on this thing. It turns out it&rsquo;s pretty easy to get SSH access to the device as root, and from there add custom applications, or even access the framebuffer directly."><meta property="og:type" content="article"><meta property="og:url" content="https://sixfoisneuf.fr/posts/kindle-hacking-jailbreak/"><meta property="article:published_time" content="2020-12-27T22:10:12+00:00"><meta property="article:modified_time" content="2020-12-27T22:10:12+00:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="Kindle hacking: jailbreaking your Kindle 4 and writing Kindlets"><meta name=twitter:description content="I have been back at my folks for winter holiday, which means I&rsquo;m rediscovering some old stuff I had laying around. One of these is a Kindle 4, an old ebook reader which was gathering dust in the corner of my room.
+After seeing someone use it as a weather station, I started to look up how I could go about running custom code on this thing. It turns out it&rsquo;s pretty easy to get SSH access to the device as root, and from there add custom applications, or even access the framebuffer directly."><link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel=stylesheet><link rel=stylesheet type=text/css media=screen href=https://sixfoisneuf.fr/css/normalize.css><link rel=stylesheet type=text/css media=screen href=https://sixfoisneuf.fr/css/main.css><script src=https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js></script><script src=https://sixfoisneuf.fr/js/main.js></script></head><body><div class="container wrapper post"><div class=header><base href=https://sixfoisneuf.fr/><h1 class=site-title><a href=https://sixfoisneuf.fr/>SixFoisNeuf</a></h1><div class=site-description><h2>Systems administration, DFIR and malware analysis</h2><nav class="nav social"><ul class=flat><a href=https://twitter.com/simsor title=Twitter><i data-feather=twitter></i></a><a href=https://github.com/simsor title=GitHub><i data-feather=github></i></a></ul></nav></div><nav class=nav><ul class=flat><li><a href=/>Home</a></li><li><a href=/about>About me</a></li><li><a href=/posts/index.xml>RSS</a></li></ul></nav></div><div class=post-header><h1 class=title>Kindle hacking: jailbreaking your Kindle 4 and writing Kindlets</h1><div class=meta>Posted at &mdash; Dec 27, 2020</div></div><div class=markdown><p>I have been back at my folks for winter holiday, which means I&rsquo;m rediscovering some old stuff I had laying around. One of these is a <a href=https://en.wikipedia.org/wiki/Amazon_Kindle#Kindle_4>Kindle 4</a>, an old ebook reader which was gathering dust in the corner of my room.</p><p>After seeing someone use it as a weather station, I started to look up how I could go about running custom code on this thing. It turns out it&rsquo;s pretty easy to get SSH access to the device as <code>root</code>, and from there add custom applications, or even access the framebuffer directly.</p><p>Most information comes from the <a href=https://wiki.mobileread.com/wiki/Main_Page>MobileRead Wiki</a>, especially the page <a href=https://wiki.mobileread.com/wiki/Kindle4NTHacking>Kindle4NTHacking</a>.</p><h2 id=rebooting-into-diagnostics-mode-and-adding-a-developer-key>Rebooting into diagnostics mode and adding a developer key</h2><p>Most code running on the Kindle has to be signed by a trusted developer key. This includes:</p><ul><li>Kindle firmware updates</li><li>Kindle applets (called &ldquo;Kindlets&rdquo; by Amazon)</li></ul><p>Usually, these two are the only ways to execute code. Thankfully, the Kindle 4 can be rebooted in &ldquo;Diagnostics Mode&rdquo;, which allows us to run some simple scripts.</p><p>The <a href="http://www.mobileread.com/forums/showthread.php?t=191158">Kindle NT4 jailbreak</a> will use this loophole to add a set of custom signing keys to the system keystore. This way, we will be able to run our own code!</p><p>Download the above ZIP file and extract <code>data.tar.gz</code> (which contains the custom keys, as well as a script to install them) and <code>ENABLE_DIAGS</code> to the root of your Kindle by plugging it to your PC. <code>ENABLE_DIAGS</code> will ask the Kindle to reboot into diagnostics mode on the next boot.</p><p>Eject your Kindle and reboot it. You should end up in a bizarre and new menu!</p><p>Then,</p><ul><li>Select &ldquo;D) Exit, Reboot or Disable Diags&rdquo; by using the arrow keys and pressing OK</li><li>Select &ldquo;Q) Reboot System&rdquo;, then press the left key on the d-pad to select the option.</li></ul><p>Your Kindle will reboot, it may take some time, don&rsquo;t be afraid!</p><p>Once you have rebooted, you should see a new book added to your library: &ldquo;You are Jailbroken&rdquo;.</p><h2 id=installing-usbnetwork--kual>Installing USBNetwork & KUAL</h2><p>The first hack we will install will enable us to access the Kindle using SSH over WiFi. Download <code>kindle-usbnetwork-0.57.N-k4.zip</code> from <a href="https://www.mobileread.com/forums/showthread.php?t=88004">this forum thread</a>. Extract <code>Update_usbnetwork_0.57.N_k4_install.bin</code> from the ZIP file and place it at the root of your Kindle.</p><p>Eject it and go to &ldquo;Menu -> Settings -> Menu -> Update Kindle&rdquo;. This will reboot your Kindle and install the USBNetwork package. Because you installed custom developer keys in the previous step, your device will install this update without complaining!</p><p>Once this is done, download <a href="https://www.mobileread.com/forums/showthread.php?t=203326">KUAL</a> and extract the <code>azw2</code> file to the <code>documents/</code> folder on your Kindle. KUAL stands for Kindle Unified Application Launcher, and it will greatly improve your experience when using Kindle hacks!</p><p>Your should also install the <a href="https://www.mobileread.com/forums/showthread.php?t=233932">MobileRead Kindlet Kit</a>, which will install the required keys and prerequisites. Copy the <code>Update_mkk-20141129-k4-ALL_install.bin</code> file to your Kindle and install the update.</p><p>Once this is all done, you should be able to start KUAL from your Home menu and access the &ldquo;USBNetwork&rdquo; configuration menu! Go to &ldquo;USBNetwork -> (Next page) -> Allow SSH over WiFi&rdquo;, then &ldquo;USBNetwork -> Toggle USBNetwork&rdquo;. You can check whether this worked by running &ldquo;USBNetwork status&rdquo;.</p><p>If USBNetwork is running correctly, point your SSH client at your Kindle&rsquo;s IP with the <code>root</code> account. The password can be computed using <a href=https://www.sven.de/kindle/>this nifty website</a>.</p><p>You can also add your SSH key to <code>kindle:/usbnetwork/etc/authorized_keys</code>.</p><p>Feel free to snoop around the filesystem, there&rsquo;s a bunch of really interesting stuff in there&mldr;</p><h2 id=adding-custom-kindlets>Adding custom Kindlets</h2><p>The <a href="https://www.mobileread.com/forums/forumdisplay.php?f=150">MobileRead forum</a> is a goldmine when it comes to Kindle development. It seems to be pretty active too!</p><p>Kindlets are installed in <code>kindle:/documents/</code> and have the <code>azw2</code> extension. Using your SSH access, download the file <code>/opt/amazon/ebook/lib/Kindlet-1.3.jar</code> to your computer: this is the main KDK file (Kindlet Development Kit). I recommend you follow <a href=http://cowlark.com/kindle/getting-started.html>this tutorial</a>, which gives a great starting project if you want to write your own Kindlets.</p><p>Here are some things to keep in mind:</p><ul><li>You will need the <a href=https://www.oracle.com/java/technologies/java-archive-javase5-downloads.html>Oracle JDK 1.5</a></li><li>The latest Ant release will refuse to compile for such an old version. I successfully used <a href=https://archive.apache.org/dist/ant/binaries/>Ant 1.9.15</a>.</li><li>You don&rsquo;t need to generate your own signing keys. Just use the well known <code>dntest</code> keys, for example <a href=https://bitbucket.org/ixtab/ktfonthack/src/master/developer.keystore>from here</a></li></ul><p>Here&rsquo;s an updated <code>build.xml</code> which also signs the JAR file and pushes it to your Kindle with SSH (there&rsquo;s a couple things to adapt to your context):</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-xml data-lang=xml><span style=color:#00f>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34; standalone=&#34;no&#34;?&gt;</span>
+&lt;project basedir=<span style=color:#a31515>&#34;.&#34;</span> default=<span style=color:#a31515>&#34;azw2&#34;</span> name=<span style=color:#a31515>&#34;HelloWorld&#34;</span>&gt;
+
+	&lt;taskdef name=<span style=color:#a31515>&#34;retroweaver&#34;</span> classname=<span style=color:#a31515>&#34;net.sourceforge.retroweaver.ant.RetroWeaverTask&#34;</span>&gt;
+		&lt;classpath&gt;
+			&lt;pathelement location=<span style=color:#a31515>&#34;lib/retroweaver-all-2.0.7.jar&#34;</span> /&gt;
+		&lt;/classpath&gt;
+	&lt;/taskdef&gt;
+
+	&lt;property environment=<span style=color:#a31515>&#34;env&#34;</span> /&gt;
+	&lt;property name=<span style=color:#a31515>&#34;debuglevel&#34;</span> value=<span style=color:#a31515>&#34;source,lines,vars&#34;</span> /&gt;
+	&lt;property name=<span style=color:#a31515>&#34;target&#34;</span> value=<span style=color:#a31515>&#34;1.5&#34;</span> /&gt;
+	&lt;property name=<span style=color:#a31515>&#34;source&#34;</span> value=<span style=color:#a31515>&#34;1.5&#34;</span> /&gt;
+
+	&lt;property name=<span style=color:#a31515>&#34;keystorePath&#34;</span> value=<span style=color:#a31515>&#34;developer.keystore&#34;</span> /&gt;
+	&lt;property name=<span style=color:#a31515>&#34;keystorePass&#34;</span> value=<span style=color:#a31515>&#34;password&#34;</span> /&gt;
+	&lt;property name=<span style=color:#a31515>&#34;signName&#34;</span> value=<span style=color:#a31515>&#34;test&#34;</span> /&gt;
+	&lt;property name=<span style=color:#a31515>&#34;kindleIP&#34;</span> value=<span style=color:#a31515>&#34;192.168.1.66&#34;</span> /&gt;
+
+	&lt;path id=<span style=color:#a31515>&#34;app.classpath&#34;</span>&gt;
+		&lt;pathelement location=<span style=color:#a31515>&#34;bin&#34;</span> /&gt;
+		&lt;pathelement location=<span style=color:#a31515>&#34;../Kindlet-1.3.jar&#34;</span> /&gt;
+	&lt;/path&gt;
+
+	&lt;target name=<span style=color:#a31515>&#34;init&#34;</span>&gt;
+		&lt;mkdir dir=<span style=color:#a31515>&#34;bin&#34;</span> /&gt;
+		&lt;copy includeemptydirs=<span style=color:#a31515>&#34;false&#34;</span> todir=<span style=color:#a31515>&#34;bin&#34;</span>&gt;
+			&lt;fileset dir=<span style=color:#a31515>&#34;src&#34;</span>&gt;
+				&lt;exclude name=<span style=color:#a31515>&#34;**/*.launch&#34;</span> /&gt;
+				&lt;exclude name=<span style=color:#a31515>&#34;**/*.java&#34;</span> /&gt;
+			&lt;/fileset&gt;
+		&lt;/copy&gt;
+	&lt;/target&gt;
+
+	&lt;target name=<span style=color:#a31515>&#34;clean&#34;</span>&gt;
+		&lt;delete dir=<span style=color:#a31515>&#34;bin&#34;</span> /&gt;
+	&lt;/target&gt;
+
+	&lt;target depends=<span style=color:#a31515>&#34;clean&#34;</span> name=<span style=color:#a31515>&#34;cleanall&#34;</span> /&gt;
+	&lt;target depends=<span style=color:#a31515>&#34;build-subprojects,build-project&#34;</span> name=<span style=color:#a31515>&#34;build&#34;</span> /&gt;
+
+	&lt;target name=<span style=color:#a31515>&#34;weave&#34;</span> depends=<span style=color:#a31515>&#34;build&#34;</span>&gt;
+		&lt;unzip src=<span style=color:#a31515>&#34;lib/asm-3.1.jar&#34;</span> dest=<span style=color:#a31515>&#34;bin&#34;</span> /&gt;
+		&lt;unzip src=<span style=color:#a31515>&#34;lib/retroweaver-rt-2.0.7.jar&#34;</span> dest=<span style=color:#a31515>&#34;bin&#34;</span> /&gt;
+		&lt;retroweaver srcdir=<span style=color:#a31515>&#34;bin&#34;</span> /&gt;
+	&lt;/target&gt;
+
+	&lt;target name=<span style=color:#a31515>&#34;jar&#34;</span> depends=<span style=color:#a31515>&#34;weave&#34;</span>&gt;
+		&lt;jar destfile=<span style=color:#a31515>&#34;${ant.project.name}.jar&#34;</span>
+			manifest=<span style=color:#a31515>&#34;${ant.project.name}.manifest&#34;</span>&gt;
+			&lt;fileset dir=<span style=color:#a31515>&#34;bin&#34;</span>/&gt;
+			&lt;fileset dir=<span style=color:#a31515>&#34;.&#34;</span> includes=<span style=color:#a31515>&#34;res/**&#34;</span>/&gt;
+		&lt;/jar&gt;
+	&lt;/target&gt;
+
+	&lt;target name=<span style=color:#a31515>&#34;build-subprojects&#34;</span> /&gt;
+	&lt;target depends=<span style=color:#a31515>&#34;init&#34;</span> name=<span style=color:#a31515>&#34;build-project&#34;</span>&gt;
+		&lt;echo message=<span style=color:#a31515>&#34;${ant.project.name}: ${ant.file}&#34;</span> /&gt;
+		&lt;javac debug=<span style=color:#a31515>&#34;true&#34;</span> debuglevel=<span style=color:#a31515>&#34;${debuglevel}&#34;</span> destdir=<span style=color:#a31515>&#34;bin&#34;</span> source=<span style=color:#a31515>&#34;${source}&#34;</span> target=<span style=color:#a31515>&#34;${target}&#34;</span>&gt;
+			&lt;src path=<span style=color:#a31515>&#34;src&#34;</span> /&gt;
+			&lt;classpath refid=<span style=color:#a31515>&#34;app.classpath&#34;</span> /&gt;
+		&lt;/javac&gt;
+	&lt;/target&gt;
+
+	&lt;target name=<span style=color:#a31515>&#34;sign&#34;</span> depends=<span style=color:#a31515>&#34;jar&#34;</span>&gt;
+		&lt;signjar jar=<span style=color:#a31515>&#34;${ant.project.name}.jar&#34;</span> alias=<span style=color:#a31515>&#34;dn${signName}&#34;</span> storepass=<span style=color:#a31515>&#34;${keystorePass}&#34;</span> keystore=<span style=color:#a31515>&#34;${keystorePath}&#34;</span> /&gt;
+		&lt;signjar jar=<span style=color:#a31515>&#34;${ant.project.name}.jar&#34;</span> alias=<span style=color:#a31515>&#34;di${signName}&#34;</span> storepass=<span style=color:#a31515>&#34;${keystorePass}&#34;</span> keystore=<span style=color:#a31515>&#34;${keystorePath}&#34;</span>  /&gt;
+		&lt;signjar jar=<span style=color:#a31515>&#34;${ant.project.name}.jar&#34;</span> alias=<span style=color:#a31515>&#34;dk${signName}&#34;</span> storepass=<span style=color:#a31515>&#34;${keystorePass}&#34;</span> keystore=<span style=color:#a31515>&#34;${keystorePath}&#34;</span>  /&gt;
+		<span style=color:green>&lt;!--</span><span style=color:green>digestalg=&#34;SHA1&#34; sigalg=&#34;SHA1withDSA&#34;</span><span style=color:green>--&gt;</span>
+	&lt;/target&gt;
+
+	&lt;target name=<span style=color:#a31515>&#34;azw2&#34;</span> depends=<span style=color:#a31515>&#34;sign&#34;</span>&gt;
+		&lt;move file=<span style=color:#a31515>&#34;${ant.project.name}.jar&#34;</span> tofile=<span style=color:#a31515>&#34;${ant.project.name}.azw2&#34;</span> /&gt;
+	&lt;/target&gt;
+
+	&lt;target name=<span style=color:#a31515>&#34;deploy&#34;</span> depends=<span style=color:#a31515>&#34;azw2&#34;</span>&gt;
+		&lt;scp file=<span style=color:#a31515>&#34;${ant.project.name}.azw2&#34;</span> todir=<span style=color:#a31515>&#34;root@${kindleIP}:/mnt/us/documents/&#34;</span> password=<span style=color:#a31515>&#34;fiona156&#34;</span> trust=<span style=color:#a31515>&#34;true&#34;</span>/&gt;
+	&lt;/target&gt;
+&lt;/project&gt;
+</code></pre></div><p>Kindlets are developed using AWT, which is <em>ancient</em>. The custom JVM they are using also has a bunch of weird specificities, and seems very brittle. This is why the next blog post will explore advanced internals and how to directly write to the e-ink display with native code!</p><p>Stay tuned :)</p></div><div class=post-tags></div></div><div class="footer wrapper"><nav class=nav><div><a href=https://github.com/vividvilla/ezhil>Ezhil theme</a> | Built with <a href=https://gohugo.io>Hugo</a></div></nav></div><script>feather.replace()</script></body></html>

